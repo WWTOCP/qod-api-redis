@@ -1,0 +1,7 @@
+.dockerignore
+README.md
+LICENSE
+requirements.txt
+run.bat
+run.sh
+test_qod_api.py
