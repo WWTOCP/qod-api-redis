@@ -19,10 +19,20 @@ async function connectToMongo() {
   return { client, collection };
 }
 
+function dailyQuoteId(){
+  var now = new Date();
+  var start = new Date(now.getFullYear(), 0, 0);
+  var diff = (now - start) + ((start.getTimezoneOffset() - now.getTimezoneOffset()) * 60 * 1000);
+  var oneDay = 1000 * 60 * 60 * 24;
+  var day = Math.floor(diff / oneDay);
+  return day;
+}
+
 app.get('/daily', async (req, res) => {
   try {
     const { client, collection } = await connectToMongo();
-    const dailyQuote = await collection.findOne({ daily: true });
+    var quote_id = dailyQuoteId();
+    const dailyQuote = await collection.findOne({ id: quote_id });
     await client.close();
     if (dailyQuote) {
       res.json({
