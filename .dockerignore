@@ -1,3 +1,4 @@
+# exclude files from build context
 .dockerignore
 README.md
 LICENSE

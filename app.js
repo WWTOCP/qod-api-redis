@@ -3,6 +3,7 @@ const { MongoClient } = require('mongodb');
 const app = express();
 const port = process.env.PORT || 8080;
 
+// set references corresponding to those established by the MongoDB database repo
 const dbUser = process.env.DB_USER || 'user';
 const dbPass = process.env.DB_PASS || 'pass';
 const dbHost = process.env.DB_HOST || 'qod-db';
@@ -20,6 +21,7 @@ async function connectToMongo() {
 }
 
 function dailyQuoteId(){
+  // assumes the order of the database is random and day of year corresponds to quote id
   var now = new Date();
   var start = new Date(now.getFullYear(), 0, 0);
   var diff = (now - start) + ((start.getTimezoneOffset() - now.getTimezoneOffset()) * 60 * 1000);
