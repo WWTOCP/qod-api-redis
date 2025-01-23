@@ -5,7 +5,7 @@ const app = express();
 const port = process.env.PORT || 8080;
 
 // configure Redis client
-const redisHost = process.env.DB_HOST || 'localhost';
+const redisHost = process.env.DB_HOST || '127.0.0.1';
 const redisUrl = `redis://${redisHost}:6379`;
 const client = createClient({ url: redisUrl });
 
