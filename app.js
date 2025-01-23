@@ -1,10 +1,12 @@
 const express = require('express');
 const { createClient } = require('redis');
+
 const app = express();
 const port = process.env.PORT || 8080;
 
 // configure Redis client
-const redisUrl = `redis://${process.env.DB_HOST || 'localhost'}:6379`;
+const redisHost = process.env.DB_HOST || 'redis';
+const redisUrl = `redis://${redisHost}:6379`;
 const client = createClient({ url: redisUrl });
 
 client.on('error', (err) => console.error('Redis Client Error', err));
