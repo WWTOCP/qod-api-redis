@@ -59,7 +59,8 @@ app.get('/daily', async (req, res) => {
 app.get('/random', async (req, res) => {
   try {
     // select a random key
-    const randomKey = keys[Math.floor(Math.random() * keys.length)];
+    var random_id = Math.floor(Math.random() * keys.length);
+    const key = `quote:${random_id}`;
     const quote = await client.hGetAll(randomKey);
 
     if (keys.length === 0) {
