@@ -3,12 +3,23 @@ const { createClient } = require('redis');
 const app = express();
 const port = process.env.PORT || 8080;
 
-// Redis client configuration
+// configure Redis client
 const redisUrl = `redis://${process.env.DB_HOST || 'localhost'}:6379`;
 const client = createClient({ url: redisUrl });
 
+client.on('error', (err) => console.error('Redis Client Error', err));
+
 // connect to Redis
-client.connect().catch(console.error);
+async function connectRedis() {
+  try {
+    await client.connect();
+    console.log('Connected to Redis');
+  } catch (err) {
+    console.error('Failed to connect to Redis', err);
+  }
+}
+
+connectRedis();
 
 app.use(express.json());
 
