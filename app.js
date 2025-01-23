@@ -61,7 +61,7 @@ app.get('/random', async (req, res) => {
     // select a random key
     var random_id = Math.floor(Math.random() * 500);
     const key = `quote:${random_id}`;
-    const quote = await client.hGetAll(randomKey);
+    const quote = await client.hGetAll(key);
 
     if (keys.length === 0) {
       return res.status(404).json({ error: 'No quotes found' });
