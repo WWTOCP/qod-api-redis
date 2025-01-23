@@ -56,24 +56,15 @@ app.get('/daily', async (req, res) => {
   }
 });
 
-app.get('/quote', async (req, res) => {
+app.get('/random', async (req, res) => {
   try {
-    // use SCAN to retrieve all keys matching 'quote:*'
-    let cursor = '0';
-    let keys = [];
-    do {
-      const reply = await client.scan(cursor, { MATCH: 'quote:*', COUNT: 100 });
-      cursor = reply.cursor;
-      keys = keys.concat(reply.keys);
-    } while (cursor !== '0');
+    // select a random key
+    const randomKey = keys[Math.floor(Math.random() * keys.length)];
+    const quote = await client.hGetAll(randomKey);
 
     if (keys.length === 0) {
       return res.status(404).json({ error: 'No quotes found' });
     }
-
-    // select a random key
-    const randomKey = keys[Math.floor(Math.random() * keys.length)];
-    const quote = await client.hGetAll(randomKey);
 
     res.json({
       source: 'Redis',
