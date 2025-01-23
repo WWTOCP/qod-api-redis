@@ -1,24 +1,16 @@
 const express = require('express');
-const { MongoClient } = require('mongodb');
+const { createClient } = require('redis');
 const app = express();
 const port = process.env.PORT || 8080;
 
-// set references corresponding to those established by the MongoDB database repo
-const dbUser = process.env.DB_USER || 'user';
-const dbPass = process.env.DB_PASS || 'pass';
-const dbHost = process.env.DB_HOST || 'qod-db';
-const dbPort = process.env.DB_PORT || '27017';
-const dbName = process.env.DB_NAME || 'qod';
+// Redis client configuration
+const redisUrl = `redis://${process.env.DB_HOST || 'localhost'}:6379`;
+const client = createClient({ url: redisUrl });
 
-const uri = `mongodb://${dbUser}:${dbPass}@${dbHost}:${dbPort}/${dbName}?authSource=admin`;
+// connect to Redis
+client.connect().catch(console.error);
 
-async function connectToMongo() {
-  const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true });
-  await client.connect();
-  const db = client.db(dbName);
-  const collection = db.collection('quotes');
-  return { client, collection };
-}
+app.use(express.json());
 
 function dailyQuoteId(){
   // assumes the order of the database is random and day of year corresponds to quote id
@@ -32,42 +24,50 @@ function dailyQuoteId(){
 
 app.get('/daily', async (req, res) => {
   try {
-    const { client, collection } = await connectToMongo();
     var quote_id = dailyQuoteId();
-    const dailyQuote = await collection.findOne({ id: quote_id });
-    await client.close();
-    if (dailyQuote) {
-      res.json({
-        source: 'MongoDB',
-        text: dailyQuote.text,
-        author: dailyQuote.author,
-        genre: dailyQuote.genre
-      });
-    } else {
-      res.status(404).json({ error: 'Daily quote not found' });
+    const key = `quote:${quote_id}`;
+    const quote = await client.hGetAll(key);
+
+    if (Object.keys(quote).length === 0) {
+      return res.status(404).json({ error: 'Daily quote not found' });
     }
+
+    res.json({
+      source: 'Redis',
+      text: quote.text,
+      author: quote.author,
+      genre: quote.genre,
+    });
   } catch (error) {
     res.status(500).json({ error: 'An error occurred while fetching the daily quote' });
   }
 });
 
-app.get('/random', async (req, res) => {
+app.get('/quote', async (req, res) => {
   try {
-    const { client, collection } = await connectToMongo();
-    const count = await collection.countDocuments();
-    const randomIndex = Math.floor(Math.random() * count);
-    const randomQuote = await collection.find().limit(1).skip(randomIndex).next();
-    await client.close();
-    if (randomQuote) {
-      res.json({
-        source: 'MongoDB',
-        text: randomQuote.text,
-        author: randomQuote.author,
-        genre: randomQuote.genre
-      });
-    } else {
-      res.status(404).json({ error: 'No quotes found' });
+    // use SCAN to retrieve all keys matching 'quote:*'
+    let cursor = '0';
+    let keys = [];
+    do {
+      const reply = await client.scan(cursor, { MATCH: 'quote:*', COUNT: 100 });
+      cursor = reply.cursor;
+      keys = keys.concat(reply.keys);
+    } while (cursor !== '0');
+
+    if (keys.length === 0) {
+      return res.status(404).json({ error: 'No quotes found' });
     }
+
+    // select a random key
+    const randomKey = keys[Math.floor(Math.random() * keys.length)];
+    const quote = await client.hGetAll(randomKey);
+
+    res.json({
+      source: 'Redis',
+      text: quote.text,
+      author: quote.author,
+      genre: quote.genre,
+    });
   } catch (error) {
     res.status(500).json({ error: 'An error occurred while fetching a random quote' });
   }
